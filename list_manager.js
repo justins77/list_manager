@@ -1,9 +1,16 @@
 
+// Next steps:
+// - handle row insertion properly
+// - handle indentation properly (save indent for each row)
+// - expand/contract children
+// - show an ID in a box for each row
 
 KEY_UP = 38;
 KEY_DOWN = 40;
 KEY_ENTER = 13;
 KEY_TAB = 9;
+
+PX_PER_INDENT_LEVEL = 20;
 
 var currentRow = 0;
 
@@ -31,13 +38,19 @@ function moveRow(direction) {
 var temporaryIndent = 0;
 
 function changeIndent(direction) {
-    if (temporaryIndent == 0 && direction < 0) {
+    var currentElement = getRowElement(currentRow);
+    var currentMargin = parseInt(currentElement.style.marginLeft);
+    if (isNaN(currentMargin)) {
+	currentMargin = 0;
+    }
+    var currentIndent = currentMargin / PX_PER_INDENT_LEVEL;
+
+    if (currentIndent == 0 && direction < 0) {
 	return;
     }
 
-    var currentElement = getRowElement(currentRow);
-    temporaryIndent += direction;
-    currentElement.style.marginLeft = "" + temporaryIndent * 20 + "px";
+    currentIndent += direction;
+    currentElement.style.marginLeft = "" + currentIndent * PX_PER_INDENT_LEVEL + "px";
 }
 
 function insertNewRow() {
