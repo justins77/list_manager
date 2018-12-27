@@ -1,45 +1,41 @@
 
 // Next steps:
-// - handle row insertion properly
-// - handle indentation properly (save indent for each row)
 // - expand/contract children
 // - show an ID in a box for each row
+// - smarter cursor positioning in row when moving up/down
+// - dragging of items up/down
+// - mouse selection of rows
 
 KEY_UP = 38;
 KEY_DOWN = 40;
 KEY_ENTER = 13;
+KEY_BACKSPACE = 8;
 KEY_TAB = 9;
 
 PX_PER_INDENT_LEVEL = 20;
 
-var currentRow = 0;
+var currentRowElement = document.getElementById("row0");
 
-function getRowElement(row) {
-    return document.getElementById("row" + row);
+function populateCurrentInputElement() {
+    text = currentRowElement.innerHTML;
+    currentRowElement.innerHTML = '<input type="text" value="' + text + '">';
+    currentRowElement.childNodes[0].focus();
 }
 
 function moveRow(direction) {
-    var currentElement = getRowElement(currentRow);
-    var text = currentElement.childNodes[0].value;
-    currentElement.innerHTML = text;
+    var text = currentRowElement.childNodes[0].value;
+    currentRowElement.innerHTML = text;
 
-    var newCurrentRow = currentRow + direction;
-    var newElement = getRowElement(newCurrentRow);
+    var newElement = direction == 1 ? currentRowElement.nextSibling : currentRowElement.previousSibling;
     if (newElement != null) {
-	currentRow = newCurrentRow;
-	currentElement = newElement;
+	currentRowElement = newElement;
     }
 
-    text = currentElement.innerHTML;
-    currentElement.innerHTML = '<input type="text" value="' + text + '">';
-    currentElement.childNodes[0].focus();
+    populateCurrentInputElement();
 }
 
-var temporaryIndent = 0;
-
 function changeIndent(direction) {
-    var currentElement = getRowElement(currentRow);
-    var currentMargin = parseInt(currentElement.style.marginLeft);
+    var currentMargin = parseInt(currentRowElement.style.marginLeft);
     if (isNaN(currentMargin)) {
 	currentMargin = 0;
     }
@@ -50,24 +46,48 @@ function changeIndent(direction) {
     }
 
     currentIndent += direction;
-    currentElement.style.marginLeft = "" + currentIndent * PX_PER_INDENT_LEVEL + "px";
+    currentRowElement.style.marginLeft = "" + currentIndent * PX_PER_INDENT_LEVEL + "px";
 }
 
 function insertNewRow() {
     var mainElement = document.getElementById("main");
 
     var newNode = document.createElement("div");
-    newNode.setAttribute("id", "row" + (currentRow + 1));
+    newNode.style.marginLeft = currentRowElement.style.marginLeft;
     newNode.innerHTML = "&nbsp;";
-    //newNode.appendChild(document.createTextNode("&nbsp;"));
 
-    var nextRowElement = getRowElement(currentRow + 1);
+    var nextRowElement = currentRowElement.nextSibling;
     if (nextRowElement == null) {
 	mainElement.appendChild(newNode);
     } else {
 	mainElement.insertBefore(newNode, nextRowElement);
     }
     moveRow(1);
+}
+
+function deleteRow() {
+    var previousElement = currentRowElement.previousSibling;
+
+    if (previousElement == null) {
+	return;
+    }
+
+    var mainElement = document.getElementById("main");
+    mainElement.removeChild(currentRowElement);
+    currentRowElement = previousElement;
+
+    populateCurrentInputElement();
+}
+
+function maybeDeleteRow() {
+    var inputElement = currentRowElement.childNodes[0];
+
+    if (inputElement.selectionStart == 0 && inputElement.selectionEnd == 0 && inputElement.value.trim().length == 0) {
+	deleteRow();
+	return false;
+    }
+
+    return true;
 }
 
 window.onkeydown = function(e) {
@@ -85,6 +105,8 @@ window.onkeydown = function(e) {
 	} else {
 	    changeIndent(1);
 	}
+    } else if (key == KEY_BACKSPACE) {
+	return maybeDeleteRow();
     } else {
 	console.log("key: " + key);
 	return true;
