@@ -80,6 +80,9 @@ function changeIndent(direction) {
 	return;
     }
 
+    // TODO: we may need to unhide the children of our parent if we are indenting to become
+    // a child of a currently-hidden parent
+
     var previousIndent = getIndent(currentRowElement.previousSibling);
     var currentIndent = getIndent(currentRowElement);
 
@@ -101,6 +104,9 @@ function insertNewRow() {
     newNode.innerHTML = '<img src="icon_single.png">';
 
     var nextRowElement = currentRowElement.nextSibling;
+    while (nextRowElement != null && nextRowElement.style.visibility == 'hidden') {
+	nextRowElement = nextRowElement.nextSibling;
+    }
     if (nextRowElement == null) {
 	mainElement.appendChild(newNode);
     } else {
