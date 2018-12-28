@@ -1,10 +1,21 @@
 
 // Next steps:
-// - expand/contract children
+// - some hacky save/load functionality (would enable actually using it)
 // - show an ID in a box for each row
-// - smarter cursor positioning in row when moving up/down
 // - dragging of items up/down
 // - mouse selection of rows
+// - mouse expand/contract
+// - shift-up/down to select multiple rows
+// - expand parent if needed when hitting tab to create child
+//
+// Longer term:
+// - marking tasks as done
+// - progress bar / percent complete
+// - effort points for tasks
+// - secondary list in another pane
+//   - dragging between panes to create links
+//   - typing "=" to create a link (should show a dropdown intelligently ranking items to link, can use item number or text)
+// - maintain horizontal position in row when moving up/down
 
 KEY_UP = 38;
 KEY_DOWN = 40;
@@ -15,7 +26,7 @@ KEY_ESC = 27;
 
 PX_PER_INDENT_LEVEL = 20;
 
-DEFAULT_ROW_HEIGHT = '23px';
+DEFAULT_ROW_HEIGHT = '24px';
 
 var currentRowElement = null;
 
@@ -51,7 +62,11 @@ function populateNonInputRow(rowElement) {
 function populateCurrentInputElement() {
     var text = getTextForRow(currentRowElement);
     currentRowElement.innerHTML = getRowPrefixHtml(currentRowElement) + '<input type="text" value="' + text + '">';
-    currentRowElement.childNodes[1].focus();
+    var inputElement = currentRowElement.childNodes[1];
+    inputElement.focus();
+    // For now, put the cursor at end or row
+    inputElement.selectionStart = text.length;
+    inputElement.selectionEnd = text.length;
 }
 
 function moveRow(direction) {
@@ -125,6 +140,10 @@ function insertNewRow() {
 function deleteRow() {
     var previousElement = currentRowElement.previousSibling;
 
+    while (previousElement != null && previousElement.style.visibility == 'hidden') {
+	previousElement = previousElement.previousSibling;
+    }
+
     if (previousElement == null) {
 	return;
     }
@@ -150,7 +169,6 @@ function maybeDeleteRow() {
 function updateVisibilityState(parentRow) {
     var myIndent = getIndent(parentRow);
     var contracted = parentRow.lmContracted;
-    //console.log("row: " + parentRow.innerHTML + " contracted: " + contracted);
     var row = parentRow.nextSibling;
     while (row != null && getIndent(row) > myIndent) {
 	if (!contracted) {
