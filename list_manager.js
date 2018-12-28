@@ -72,9 +72,14 @@ function getIndent(rowElement) {
 }
 
 function changeIndent(direction) {
+    if (currentRowElement.previousSibling == null) {
+	return;
+    }
+
+    var previousIndent = getIndent(currentRowElement.previousSibling);
     var currentIndent = getIndent(currentRowElement);
 
-    if (currentRowElement.previousSibling == null ||
+    if ((currentIndent >= previousIndent + 1 && direction > 0) ||
 	(currentIndent == 0 && direction < 0)) {
 	return;
     }
