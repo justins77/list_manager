@@ -11,42 +11,77 @@ KEY_DOWN = 40;
 KEY_ENTER = 13;
 KEY_BACKSPACE = 8;
 KEY_TAB = 9;
+KEY_ESC = 27;
 
 PX_PER_INDENT_LEVEL = 20;
 
 var currentRowElement = document.getElementById("row0");
 
+function getRowPrefixHtml(rowElement) {
+    var nextRowElement = rowElement.nextSibling;
+    if (nextRowElement != null && getIndent(nextRowElement) > getIndent(rowElement)) {
+	if (rowElement.lmContracted) {
+	    return '<img src="icon_closed.png">';
+	} else {
+	    return '<img src="icon_open.png">'
+	}
+    } else {
+	return '<img src="icon_single.png">'
+    }
+}
+
+function getTextForRow(rowElement) {
+    var textNode = rowElement.childNodes[1];
+    var text;
+    if (textNode == null) {
+	return '';
+    } else if (textNode instanceof HTMLInputElement) {
+	return textNode.value;
+    } else {
+	return textNode.textContent;
+    }
+}
+
+function populateNonInputRow(rowElement) {
+    rowElement.innerHTML = getRowPrefixHtml(rowElement) + getTextForRow(rowElement);
+}
+
 function populateCurrentInputElement() {
-    text = currentRowElement.innerHTML;
-    currentRowElement.innerHTML = '<input type="text" value="' + text + '">';
-    currentRowElement.childNodes[0].focus();
+    var text = getTextForRow(currentRowElement);
+    currentRowElement.innerHTML = getRowPrefixHtml(currentRowElement) + '<input type="text" value="' + text + '">';
+    currentRowElement.childNodes[1].focus();
 }
 
 function moveRow(direction) {
-    var text = currentRowElement.childNodes[0].value;
-    currentRowElement.innerHTML = text;
-
     var newElement = direction == 1 ? currentRowElement.nextSibling : currentRowElement.previousSibling;
-    if (newElement != null) {
-	currentRowElement = newElement;
+    if (newElement == null) {
+	return;
     }
 
+    populateNonInputRow(currentRowElement);
+    currentRowElement = newElement;
     populateCurrentInputElement();
 }
 
-function changeIndent(direction) {
-    var currentMargin = parseInt(currentRowElement.style.marginLeft);
+function getIndent(rowElement) {
+    var currentMargin = parseInt(rowElement.style.marginLeft);
     if (isNaN(currentMargin)) {
 	currentMargin = 0;
     }
-    var currentIndent = currentMargin / PX_PER_INDENT_LEVEL;
+    return currentMargin / PX_PER_INDENT_LEVEL;
+}
 
-    if (currentIndent == 0 && direction < 0) {
+function changeIndent(direction) {
+    var currentIndent = getIndent(currentRowElement);
+
+    if (currentRowElement.previousSibling == null ||
+	(currentIndent == 0 && direction < 0)) {
 	return;
     }
 
     currentIndent += direction;
     currentRowElement.style.marginLeft = "" + currentIndent * PX_PER_INDENT_LEVEL + "px";
+    populateNonInputRow(currentRowElement.previousSibling);
 }
 
 function insertNewRow() {
@@ -54,7 +89,7 @@ function insertNewRow() {
 
     var newNode = document.createElement("div");
     newNode.style.marginLeft = currentRowElement.style.marginLeft;
-    newNode.innerHTML = "&nbsp;";
+    newNode.innerHTML = '<img src="icon_single.png">';
 
     var nextRowElement = currentRowElement.nextSibling;
     if (nextRowElement == null) {
@@ -80,7 +115,7 @@ function deleteRow() {
 }
 
 function maybeDeleteRow() {
-    var inputElement = currentRowElement.childNodes[0];
+    var inputElement = currentRowElement.childNodes[1];
 
     if (inputElement.selectionStart == 0 && inputElement.selectionEnd == 0 && inputElement.value.trim().length == 0) {
 	deleteRow();
@@ -88,6 +123,11 @@ function maybeDeleteRow() {
     }
 
     return true;
+}
+
+function toggleExpanded() {
+    currentRowElement.lmContracted = !currentRowElement.lmContracted;
+    populateCurrentInputElement();
 }
 
 window.onkeydown = function(e) {
@@ -107,6 +147,8 @@ window.onkeydown = function(e) {
 	}
     } else if (key == KEY_BACKSPACE) {
 	return maybeDeleteRow();
+    } else if (key == KEY_ESC) {
+	return toggleExpanded();
     } else {
 	console.log("key: " + key);
 	return true;
