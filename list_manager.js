@@ -140,20 +140,32 @@ function maybeDeleteRow() {
     return true;
 }
 
+function updateVisibilityState(parentRow) {
+    var myIndent = getIndent(parentRow);
+    var contracted = parentRow.lmContracted;
+    //console.log("row: " + parentRow.innerHTML + " contracted: " + contracted);
+    var row = parentRow.nextSibling;
+    while (row != null && getIndent(row) > myIndent) {
+	if (!contracted) {
+	    row.style.visibility = 'visible';
+	    row.style.height = '21px';
+	    if (row.lmContracted) {
+		row = updateVisibilityState(row);
+		continue;
+	    }
+	} else {
+	    row.style.visibility = 'hidden';
+	    row.style.height = '0px';
+	}
+	row = row.nextSibling;
+    }
+    return row;
+}
+
 function toggleExpanded() {
     currentRowElement.lmContracted = !currentRowElement.lmContracted;
     populateCurrentInputElement();
-    var myIndent = getIndent(currentRowElement);
-    // TODO: this shouldn't unhide children of my children if my children are contracted
-    for (var row = currentRowElement.nextSibling; row != null && getIndent(row) > myIndent; row = row.nextSibling) {
-	if (currentRowElement.lmContracted) {
-	    row.style.visibility = 'hidden';
-	    row.style.height = '0px';
-	} else {
-	    row.style.visibility = 'visible';
-	    row.style.height = '20px';
-	}
-    }
+    updateVisibilityState(currentRowElement);
 }
 
 window.onkeydown = function(e) {
