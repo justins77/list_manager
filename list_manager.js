@@ -53,7 +53,11 @@ function populateCurrentInputElement() {
 }
 
 function moveRow(direction) {
-    var newElement = direction == 1 ? currentRowElement.nextSibling : currentRowElement.previousSibling;
+    var newElement = currentRowElement;
+    do {
+	newElement = direction == 1 ? newElement.nextSibling : newElement.previousSibling;
+    } while (newElement != null && newElement.style.visibility == 'hidden');
+
     if (newElement == null) {
 	return;
     }
@@ -133,6 +137,17 @@ function maybeDeleteRow() {
 function toggleExpanded() {
     currentRowElement.lmContracted = !currentRowElement.lmContracted;
     populateCurrentInputElement();
+    var myIndent = getIndent(currentRowElement);
+    // TODO: this shouldn't unhide children of my children if my children are contracted
+    for (var row = currentRowElement.nextSibling; row != null && getIndent(row) > myIndent; row = row.nextSibling) {
+	if (currentRowElement.lmContracted) {
+	    row.style.visibility = 'hidden';
+	    row.style.height = '0px';
+	} else {
+	    row.style.visibility = 'visible';
+	    row.style.height = '20px';
+	}
+    }
 }
 
 window.onkeydown = function(e) {
