@@ -15,7 +15,9 @@ KEY_ESC = 27;
 
 PX_PER_INDENT_LEVEL = 20;
 
-var currentRowElement = document.getElementById("row0");
+DEFAULT_ROW_HEIGHT = '23px';
+
+var currentRowElement = null;
 
 function getRowPrefixHtml(rowElement) {
     var nextRowElement = rowElement.nextSibling;
@@ -100,10 +102,11 @@ function insertNewRow() {
     var mainElement = document.getElementById("main");
 
     var newNode = document.createElement("div");
-    newNode.style.marginLeft = currentRowElement.style.marginLeft;
+    newNode.style.marginLeft = currentRowElement ? currentRowElement.style.marginLeft : '0px';
+    newNode.style.height = DEFAULT_ROW_HEIGHT;
     newNode.innerHTML = '<img src="icon_single.png">';
 
-    var nextRowElement = currentRowElement.nextSibling;
+    var nextRowElement = currentRowElement ? currentRowElement.nextSibling : null;
     while (nextRowElement != null && nextRowElement.style.visibility == 'hidden') {
 	nextRowElement = nextRowElement.nextSibling;
     }
@@ -111,6 +114,10 @@ function insertNewRow() {
 	mainElement.appendChild(newNode);
     } else {
 	mainElement.insertBefore(newNode, nextRowElement);
+    }
+
+    if (currentRowElement == null) {
+	currentRowElement = newNode;
     }
     moveRow(1);
 }
@@ -148,7 +155,7 @@ function updateVisibilityState(parentRow) {
     while (row != null && getIndent(row) > myIndent) {
 	if (!contracted) {
 	    row.style.visibility = 'visible';
-	    row.style.height = '21px';
+	    row.style.height = DEFAULT_ROW_HEIGHT;
 	    if (row.lmContracted) {
 		row = updateVisibilityState(row);
 		continue;
@@ -194,3 +201,7 @@ window.onkeydown = function(e) {
 
     return false;
 }
+
+// Insert the first empty row for this list
+insertNewRow();
+populateCurrentInputElement();
