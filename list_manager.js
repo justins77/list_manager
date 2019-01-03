@@ -6,8 +6,6 @@
 // - some hacky save/load functionality (would enable actually using it)
 // - show an ID in a box for each row
 // - dragging of items up/down
-// - mouse selection of rows
-// - mouse expand/contract
 // - shift-up/down to select multiple rows
 // - expand parent if needed when hitting tab to create child
 //
@@ -65,26 +63,26 @@ function getTextForRow(rowElement) {
     }
 }
 
-function populateNonInputRow(rowElement) {
-    rowElement.innerHTML = getRowPrefixHtml(rowElement) + getTextForRow(rowElement);
-}
-
-function populateInputRow(rowElement) {
-    var text = getTextForRow(rowElement);
-    rowElement.innerHTML = getRowPrefixHtml(rowElement) + '<input type="text" value="' + text + '">';
-    var inputElement = rowElement.childNodes[ITEM_DETAIL_CHILD_INDEX];
-    inputElement.focus();
-    // For now, put the cursor at end or row
-    inputElement.selectionStart = text.length;
-    inputElement.selectionEnd = text.length;
-}
-
 function populateRow(rowElement) {
     if (rowElement == currentRowElement) {
-	populateInputRow(rowElement);
+	var text = getTextForRow(rowElement);
+	rowElement.innerHTML = getRowPrefixHtml(rowElement) + '<input type="text" value="' + text + '">';
+	var inputElement = rowElement.childNodes[ITEM_DETAIL_CHILD_INDEX];
+	inputElement.focus();
+	// For now, put the cursor at end or row
+	inputElement.selectionStart = text.length;
+	inputElement.selectionEnd = text.length;
     } else {
-	populateNonInputRow(rowElement);
+	rowElement.innerHTML = getRowPrefixHtml(rowElement) + getTextForRow(rowElement);
     }
+    rowElement.onclick = function() { selectRow(this); };
+}
+
+function selectRow(rowElement) {
+    var oldRowElement = currentRowElement;
+    currentRowElement = rowElement;
+    populateRow(oldRowElement);
+    populateRow(currentRowElement);
 }
 
 function moveRow(direction) {
@@ -97,10 +95,7 @@ function moveRow(direction) {
 	return;
     }
 
-    var oldRowElement = currentRowElement;
-    currentRowElement = newElement;
-    populateRow(oldRowElement);
-    populateRow(currentRowElement);
+    selectRow(newElement);
 }
 
 function getIndent(rowElement) {
@@ -129,7 +124,7 @@ function changeIndent(direction) {
 
     currentIndent += direction;
     currentRowElement.style.marginLeft = "" + currentIndent * PX_PER_INDENT_LEVEL + "px";
-    populateNonInputRow(currentRowElement.previousSibling);
+    populateRow(currentRowElement.previousSibling);
 }
 
 function insertNewRow() {
