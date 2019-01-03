@@ -79,7 +79,13 @@ function populateRow(rowElement) {
 	inputElement.selectionStart = text.length;
 	inputElement.selectionEnd = text.length;
     } else {
-	rowElement.innerHTML = getRowPrefixHtml(rowElement) + getTextForRow(rowElement);
+	rowElement.innerHTML = getRowPrefixHtml(rowElement) + '<span>' + getTextForRow(rowElement) + '</span>';
+    }
+    if (rowElement.lmChecked) {
+	var itemDetailElement = rowElement.childNodes[ITEM_DETAIL_CHILD_INDEX];
+	if (itemDetailElement) {
+	    itemDetailElement.style.textDecoration = 'line-through';
+	}
     }
     rowElement.onclick = function() { selectRow(this); };
 }
