@@ -1,4 +1,7 @@
 
+// High level:
+// - review other task planning systems: https://www.capterra.com/task-management-software/
+//
 // Next steps:
 // - some hacky save/load functionality (would enable actually using it)
 // - show an ID in a box for each row
@@ -10,12 +13,16 @@
 //
 // Longer term:
 // - marking tasks as done
+// - button / menu item to archive completed tasks from a list
 // - progress bar / percent complete
-// - effort points for tasks
+// - additional optional columns
+//   - effort points for tasks
+//   - assignee
 // - secondary list in another pane
 //   - dragging between panes to create links
 //   - typing "=" to create a link (should show a dropdown intelligently ranking items to link, can use item number or text)
 // - maintain horizontal position in row when moving up/down
+// - burndown chart
 
 KEY_UP = 38;
 KEY_DOWN = 40;
@@ -28,23 +35,26 @@ PX_PER_INDENT_LEVEL = 20;
 
 DEFAULT_ROW_HEIGHT = '24px';
 
+// Index of the child element that is either text or a text field depending on state of the item
+ITEM_DETAIL_CHILD_INDEX = 2;
+
 var currentRowElement = null;
 
 function getRowPrefixHtml(rowElement) {
     var nextRowElement = rowElement.nextSibling;
     if (nextRowElement != null && getIndent(nextRowElement) > getIndent(rowElement)) {
 	if (rowElement.lmContracted) {
-	    return '<img src="icon_closed.png">';
+	    return '<img src="icon_closed.png" onclick="toggleExpanded(this.parentNode);"><input type="checkbox">';
 	} else {
-	    return '<img src="icon_open.png">'
+	    return '<img src="icon_open.png" onclick="toggleExpanded(this.parentNode);"><input type="checkbox">';
 	}
     } else {
-	return '<img src="icon_single.png">'
+	return '<img src="icon_single.png"><input type="checkbox">';
     }
 }
 
 function getTextForRow(rowElement) {
-    var textNode = rowElement.childNodes[1];
+    var textNode = rowElement.childNodes[ITEM_DETAIL_CHILD_INDEX];
     var text;
     if (textNode == null) {
 	return '';
@@ -59,14 +69,22 @@ function populateNonInputRow(rowElement) {
     rowElement.innerHTML = getRowPrefixHtml(rowElement) + getTextForRow(rowElement);
 }
 
-function populateCurrentInputElement() {
-    var text = getTextForRow(currentRowElement);
-    currentRowElement.innerHTML = getRowPrefixHtml(currentRowElement) + '<input type="text" value="' + text + '">';
-    var inputElement = currentRowElement.childNodes[1];
+function populateInputRow(rowElement) {
+    var text = getTextForRow(rowElement);
+    rowElement.innerHTML = getRowPrefixHtml(rowElement) + '<input type="text" value="' + text + '">';
+    var inputElement = rowElement.childNodes[ITEM_DETAIL_CHILD_INDEX];
     inputElement.focus();
     // For now, put the cursor at end or row
     inputElement.selectionStart = text.length;
     inputElement.selectionEnd = text.length;
+}
+
+function populateRow(rowElement) {
+    if (rowElement == currentRowElement) {
+	populateInputRow(rowElement);
+    } else {
+	populateNonInputRow(rowElement);
+    }
 }
 
 function moveRow(direction) {
@@ -79,9 +97,10 @@ function moveRow(direction) {
 	return;
     }
 
-    populateNonInputRow(currentRowElement);
+    var oldRowElement = currentRowElement;
     currentRowElement = newElement;
-    populateCurrentInputElement();
+    populateRow(oldRowElement);
+    populateRow(currentRowElement);
 }
 
 function getIndent(rowElement) {
@@ -119,7 +138,7 @@ function insertNewRow() {
     var newNode = document.createElement("div");
     newNode.style.marginLeft = currentRowElement ? currentRowElement.style.marginLeft : '0px';
     newNode.style.height = DEFAULT_ROW_HEIGHT;
-    newNode.innerHTML = '<img src="icon_single.png">';
+    newNode.innerHTML = getRowPrefixHtml(newNode);
 
     var nextRowElement = currentRowElement ? currentRowElement.nextSibling : null;
     while (nextRowElement != null && nextRowElement.style.visibility == 'hidden') {
@@ -152,11 +171,11 @@ function deleteRow() {
     mainElement.removeChild(currentRowElement);
     currentRowElement = previousElement;
 
-    populateCurrentInputElement();
+    populateRow(currentRowElement);
 }
 
 function maybeDeleteRow() {
-    var inputElement = currentRowElement.childNodes[1];
+    var inputElement = currentRowElement.childNodes[ITEM_DETAIL_CHILD_INDEX];
 
     if (inputElement.selectionStart == 0 && inputElement.selectionEnd == 0 && inputElement.value.trim().length == 0) {
 	deleteRow();
@@ -187,10 +206,10 @@ function updateVisibilityState(parentRow) {
     return row;
 }
 
-function toggleExpanded() {
-    currentRowElement.lmContracted = !currentRowElement.lmContracted;
-    populateCurrentInputElement();
-    updateVisibilityState(currentRowElement);
+function toggleExpanded(rowElement) {
+    rowElement.lmContracted = !rowElement.lmContracted;
+    populateRow(rowElement);
+    updateVisibilityState(rowElement);
 }
 
 window.onkeydown = function(e) {
@@ -211,7 +230,7 @@ window.onkeydown = function(e) {
     } else if (key == KEY_BACKSPACE) {
 	return maybeDeleteRow();
     } else if (key == KEY_ESC) {
-	return toggleExpanded();
+	return toggleExpanded(currentRowElement);
     } else {
 	console.log("key: " + key);
 	return true;
@@ -222,4 +241,4 @@ window.onkeydown = function(e) {
 
 // Insert the first empty row for this list
 insertNewRow();
-populateCurrentInputElement();
+populateRow(currentRowElement);
