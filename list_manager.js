@@ -40,14 +40,20 @@ var currentRowElement = null;
 
 function getRowPrefixHtml(rowElement) {
     var nextRowElement = rowElement.nextSibling;
+    var checkbox;
+    if (rowElement.lmChecked) {
+	checkbox = '<input type="checkbox" checked="true" onclick="toggleCheckbox(this)">';
+    } else {
+	checkbox = '<input type="checkbox" onclick="toggleCheckbox(this)">';
+    }
     if (nextRowElement != null && getIndent(nextRowElement) > getIndent(rowElement)) {
 	if (rowElement.lmContracted) {
-	    return '<img src="icon_closed.png" onclick="toggleExpanded(this.parentNode);"><input type="checkbox">';
+	    return '<img src="icon_closed.png" onclick="toggleExpanded(this.parentNode)">' + checkbox;
 	} else {
-	    return '<img src="icon_open.png" onclick="toggleExpanded(this.parentNode);"><input type="checkbox">';
+	    return '<img src="icon_open.png" onclick="toggleExpanded(this.parentNode)">' + checkbox;
 	}
     } else {
-	return '<img src="icon_single.png"><input type="checkbox">';
+	return '<img src="icon_single.png">' + checkbox;
     }
 }
 
@@ -199,6 +205,10 @@ function updateVisibilityState(parentRow) {
 	row = row.nextSibling;
     }
     return row;
+}
+
+function toggleCheckbox(element) {
+    element.parentNode.lmChecked = !element.parentNode.lmChecked;
 }
 
 function toggleExpanded(rowElement) {
